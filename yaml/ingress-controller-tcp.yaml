@@ -1,0 +1,19 @@
+controller:
+    service:
+       annotations:
+          service.beta.kubernetes.io/aws-load-balancer-internal: "false"
+          service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Owner=TF-CSM-LAB-GSTM-375-Alon,Project=TF-CSM-LAB-GSTM-375-Alon, Name=TF-CSM-LAB-GSTM-375-Alon-ingress-LB
+tcp:
+  8090: "default/xap-manager-service:8090"
+  3030: "default/grafana:3000"
+  3000: "default/spacedeck:3000"
+  8080: "default/redpanda:8080"
+  6080: "default/di-manager:6080"
+  6081: "default/di-mdm:6081"
+  6082: "default/di-subscription-manager-iidr:6082"
+  8081: "default/flink-jobmanager:8081"
+  5432: "default/xap-dgw-service:5432"
+  11701: "default/iidr-kafka:11701"
+  10101: "default/iidr-as:10101"
+  1521: "default/di-oracledb:1521"
+

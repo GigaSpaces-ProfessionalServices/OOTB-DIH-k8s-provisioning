@@ -1,0 +1,11 @@
+metric:
+  enabled: true
+antiAffinity:
+  enabled: false
+ha: false
+manager:
+  name: xap-manager
+partitions: 0
+instances: 1
+resourceUrl: "https://csm-training.s3.eu-west-1.amazonaws.com/alon/data-feeder-16.3.0-patch-t-1.jar"
+

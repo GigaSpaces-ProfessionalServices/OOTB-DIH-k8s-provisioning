@@ -1,24 +1,31 @@
 #!/bin/bash
-SCRIPT=$(realpath "$0")
-SCRIPTPATH=$(dirname "$SCRIPT")
-cd $SCRIPTPATH
-# Delete load balancer services
 
-echo "Deleting LB service ..."
-kubectl delete -f ../yaml/k8s-dashboard-lb.yaml
-kubectl delete -f ../yaml/grafana-lb.yaml
-#kubectl delete -f ../yaml/managers-lb.yaml
+clear -x
+echo "### Uninstalling Gigaspaces DIH ###"
+echo "==================================="
+read -r -p "Do you want to uninstall the ingress controller? [y/N] " response
+case "${response,,}" in
+    y*) uninstall_ingress=true ;;
+    *) uninstall_ingress=false
+esac
 
-# Delete xap umbrella
-echo "Deleting DIH umbrella ..."
-helm uninstall xap
+# delete feeder
+helm uninstall space-feeder
 
-# Delete k8s-dashboard
-echo "Deleting k8s-dashboard"
-kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+# delete space
+helm uninstall space
 
+# delete dih
+helm uninstall dih
 
+# delete ingress controller
+$uninstall_ingress && helm uninstall ingress-nginx
 
-
-
-
+while true; do
+    num_pods=$(kubectl get pods -o name | grep -v ingress-nginx | wc -l)
+    if [[ $num_pods -eq 0 ]]; then
+        echo -e "\nDIH uninstall complete!\n"
+        exit
+    fi
+done
+exit
