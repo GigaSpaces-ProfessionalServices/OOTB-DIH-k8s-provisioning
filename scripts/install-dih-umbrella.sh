@@ -44,29 +44,17 @@ LB_SVC="ingress-nginx-controller"
 ingress_query=$(kubectl get deployments $LB_SVC --no-headers 2>&1 | awk '{print $1}')
 if [[ $ingress_query == $LB_SVC ]]; then
     echo "$LB_SVC already deployed!"
-    LB_ADDRESS=$(kubectl get svc $LB_SVC --no-headers | awk '{print $4}')
+    LB_ADDRESS=$(kubectl get svc $LB_SVC -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
     echo ; echo "Load Balancer URL: http://$LB_ADDRESS"
 else
     helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f ${YAMLS}/ingress-controller-tcp.yaml
     # wait until ingress load balancer is ready
     start_time=$(date "+%s")
-    echo ; echo -n "Waiting for Ingress Load Balancer to be ready "
-
-    count=0 ; timeout=30
-    while [[ $count -lt $timeout ]]; do
-        ((count++))
-        echo -n "."
-        LB_ADDRESS=$(kubectl get svc $LB_SVC --no-headers | awk '{print $4}')
-        [[ $LB_ADDRESS != "" ]] && break || sleep 1
+    echo
+    until [ -n "$(kubectl get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')" ]; do
+        echo -n "Waiting for the Ingress controller end-point ..."
+        sleep 1
     done
-    sleep 1
-    count=0 ; timeout=30
-    while [[ $count -lt $timeout ]]; do
-        ((count++))
-        echo -n "."
-        [[ $(kubectl get pod | grep $LB_SVC | awk '{print $3}') == "Running" ]] && break || sleep 1
-    done
-    sleep 1
     LB_SVC="ingress-nginx-controller-admission"
     count=0 ; timeout=30
     while [[ $count -lt $timeout ]]; do
