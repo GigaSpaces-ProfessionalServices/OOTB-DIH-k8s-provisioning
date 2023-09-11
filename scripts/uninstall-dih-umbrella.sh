@@ -4,6 +4,7 @@
 
 function uninstall_service() {
     if [[ $(helm ls -q | grep -e "^$1$" | wc -l) -eq 1 ]]; then
+        echo -ne "\nUninstalling $1 ... "
         helm uninstall $1
     else
         echo "no deployment for '$1' found. nothing to do"
