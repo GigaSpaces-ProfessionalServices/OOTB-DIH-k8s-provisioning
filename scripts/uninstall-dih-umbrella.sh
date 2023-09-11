@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Uninstall Gigaspaces DIH
+
+function uninstall_service() {
+    if [[ $(helm ls -q | grep -e "^$1$" | wc -l) -eq 1 ]]; then
+        helm uninstall $1
+    else
+        echo "no deployment for '$1' found. nothing to do"
+    fi
+}
+
+SERVICES="space-feeder space dih ingress-nginx"
+
 clear -x
 echo "### Uninstalling Gigaspaces DIH ###"
 echo "==================================="
@@ -9,40 +21,13 @@ case "${response,,}" in
     *) uninstall_ingress=false
 esac
 
-# delete feeder
-SVC="space-feeder"
-if [[ $(helm ls | grep $SVC | wc -l) -eq 1 ]]; then
-    helm uninstall $SVC
-else
-    echo "no deployment for '${SVC}' found. nothing to do"
-fi
-
-# delete space
-SVC="space"
-if [[ $(helm ls | grep $SVC | wc -l) -eq 1 ]]; then
-    helm uninstall $SVC
-else
-    echo "no deployment for '${SVC}' found. nothing to do"
-fi
-
-
-# delete dih
-SVC="dih"
-if [[ $(helm ls | grep $SVC | wc -l) -eq 1 ]]; then
-    helm uninstall $SVC
-else
-    echo "no deployment for '${SVC}' found. nothing to do"
-fi
-
-# delete ingress controller
-$uninstall_ingress && {
-    SVC="ingress-nginx"
-    if [[ $(helm ls | grep $SVC | wc -l) -eq 1 ]]; then
-        helm uninstall $SVC
-    else
-        echo "no deployment for '${SVC}' found. nothing to do"
+# delete services
+for s in $SERVICES; do
+    if [[ $s == "ingress-nginx" ]] && ! $uninstall_ingress ; then
+        continue
     fi
-}
+    uninstall_service $s
+done
 
 # poll kubectl to verify all pods are gone
 while true; do
@@ -52,4 +37,5 @@ while true; do
         exit
     fi
 done
+
 exit
