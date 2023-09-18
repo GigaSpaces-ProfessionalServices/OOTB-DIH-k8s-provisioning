@@ -15,6 +15,13 @@ function print_duration() {
     fi
 }
 
+function poll_resource_exists() {
+    type=$1
+    name=$2
+    query=$(kubectl get $type $name --no-headers 2>&1 | awk '{print $1}')
+    [[ $query == "$name" ]] && return 0 || return 1
+}
+
 PARENT_DIR=$(realpath "$(dirname $(realpath $0))/..")
 YAMLS="${PARENT_DIR}/yaml"
 SCRIPTS="${PARENT_DIR}/scripts"
@@ -41,8 +48,7 @@ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update ingress-nginx
 echo -e "\n>> Deploying Ingress Controller ...\n"
 LB_SVC="ingress-nginx-controller"
-ingress_query=$(kubectl get deployments $LB_SVC --no-headers 2>&1 | awk '{print $1}')
-if [[ $ingress_query == $LB_SVC ]]; then
+if $(poll_resource_exists deployment $LB_SVC); then
     echo "$LB_SVC already deployed!"
     LB_ADDRESS=$(kubectl get svc $LB_SVC -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
     echo ; echo "Load Balancer URL: http://$LB_ADDRESS"
@@ -69,9 +75,24 @@ else
 fi
 
 # deploy DIH grid
-kubectl create secret docker-registry myregistrysecret --docker-server=https://index.docker.io/v1/ --docker-username=dihcustomers --docker-password=dckr_pat_NYcQySRyhRFZ6eUQAwLsYm314QA --docker-email=dih-customers@gigaspaces.com
-kubectl create secret generic datastore-credentials --from-literal=username='system' --from-literal=password='admin11'
+secret="myregistrysecret"
+if $(poll_resource_exists secret $secret); then
+    echo "$secret already exists!"
+else
+    kubectl create secret docker-registry $secret --docker-server=https://index.docker.io/v1/ --docker-username=dihcustomers --docker-password=dckr_pat_NYcQySRyhRFZ6eUQAwLsYm314QA --docker-email=dih-customers@gigaspaces.com
+fi
+secret="datastore-credentials"
+if $(poll_resource_exists secret $secret); then
+    echo "$secret already exists!"
+else
+    kubectl create secret generic datastore-credentials --from-literal=username='system' --from-literal=password='admin11'
+fi
 echo
+
+
+exit
+
+
 helm repo add dih https://s3.amazonaws.com/resources.gigaspaces.com/helm-charts-dih
 helm repo update
 echo -e "\n>> Deploying DIH (estimated time: 5-10 minutes) ...\n"
